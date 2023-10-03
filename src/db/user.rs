@@ -43,6 +43,9 @@ impl UserRepository {
 impl TUserRepositories for UserRepository {
     async fn insert(
         &self,
+        first_name: &str,
+        last_name: &str,
+        phone: Option<&str>,
         email: &str,
         p_hash: &str,
         p_alg: &str,
@@ -50,8 +53,9 @@ impl TUserRepositories for UserRepository {
         is_verify: bool,
         is_primary: bool,
     ) -> Result<String, String> {
-        let user_insert = "INSERT INTO users (password_alg, password_hash, type) 
-                VALUES ($1, $2, $3) RETURNING *";
+        let user_insert =
+            "INSERT INTO users (password_alg, password_hash, type, first_name, last_name, phone) 
+                VALUES ($1, $2, $3, $7, $8, $9) RETURNING *";
 
         let email_insert = "
             INSERT INTO user_emails (email, is_primary, is_verified, user_id) 
@@ -61,7 +65,17 @@ impl TUserRepositories for UserRepository {
             .client
             .query_one(
                 format!("WITH \"user\" AS ({}) {};", user_insert, email_insert).as_str(),
-                &[&p_alg, &p_hash, &u_type, &email, &is_primary, &is_verify],
+                &[
+                    &p_alg,
+                    &p_hash,
+                    &u_type,
+                    &email,
+                    &is_primary,
+                    &is_verify,
+                    &first_name,
+                    &last_name,
+                    &phone,
+                ],
             )
             .await;
 

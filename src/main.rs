@@ -30,6 +30,7 @@ async fn main() {
         .route("/auth/email-verification", post(auth::email_verify))
         .route("/auth/forgot-password", post(auth::forgot_password))
         .route("/auth/reset-password", post(auth::reset_password))
+        .route("/auth/revoke-token", post(auth::revoke_token))
         .layer(cors)
         .with_state(db);
 

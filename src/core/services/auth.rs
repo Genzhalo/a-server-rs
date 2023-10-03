@@ -61,7 +61,9 @@ pub struct PasswordInputData {
 
 #[derive(Debug, Serialize)]
 pub struct LoginOutputData {
+    #[serde(rename = "accessToken")]
     access_token: String,
+    #[serde(rename = "refreshToken")]
     refresh_token: String,
 }
 
@@ -99,6 +101,9 @@ impl<'a> UserService<'a> {
         let user_insert_result = self
             .user_rep
             .insert(
+                &signup_data.first_name,
+                &signup_data.last_name,
+                signup_data.phone.as_deref(),
                 &signup_data.email,
                 &password_hash,
                 &password_alg,
@@ -330,6 +335,22 @@ impl<'a> UserService<'a> {
         match self.user_rep.update_password(&user_id, &alg, &hash).await {
             Ok(_) => Ok(()),
             Err(err) => Err(BaseError::new(err)),
+        }
+    }
+
+    pub async fn revoke_token(&self, token: &str) -> Result<(), BaseError> {
+        let user_id = match JWT::default().parse(token, None) {
+            Ok(claim) => claim.sub,
+            Err(e) => return Err(BaseError::new(e)),
+        };
+
+        match self
+            .user_rep
+            .remove_user_tokens(&user_id, vec![token])
+            .await
+        {
+            Ok(_) => Ok(()),
+            Err(e) => return Err(BaseError::new(e.to_string())),
         }
     }
 

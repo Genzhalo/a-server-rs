@@ -36,11 +36,7 @@ pub async fn sign_in(
     let service = UserService::default(db.user.as_ref());
 
     match service.login(body).await {
-        Ok(token) => (
-            StatusCode::OK,
-            Json(json!({"data": { "token": token, "token_type": "Bearer" }})),
-        )
-            .into_response(),
+        Ok(token) => (StatusCode::OK, Json(json!({"data": token}))).into_response(),
         Err(err) => (StatusCode::BAD_REQUEST, Json(json!({ "data":  err }))).into_response(),
     }
 }
@@ -85,6 +81,14 @@ pub async fn reset_password(
 ) -> Response {
     let service = UserService::default(db.user.as_ref());
     match service.reset_password(&auth.token, data).await {
+        Ok(_) => (StatusCode::OK, Json(json!({ "data":  {} }))).into_response(),
+        Err(err) => (StatusCode::BAD_REQUEST, Json(json!({ "data":  err }))).into_response(),
+    }
+}
+
+pub async fn revoke_token(State(db): State<Arc<DB>>, auth: AuthData) -> Response {
+    let service = UserService::default(db.user.as_ref());
+    match service.revoke_token(&auth.token).await {
         Ok(_) => (StatusCode::OK, Json(json!({ "data":  {} }))).into_response(),
         Err(err) => (StatusCode::BAD_REQUEST, Json(json!({ "data":  err }))).into_response(),
     }

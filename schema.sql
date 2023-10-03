@@ -1,7 +1,10 @@
 CREATE TABLE IF NOT EXISTS users (
   id                VARCHAR(36) NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
+  first_name        VARCHAR(64) NOT NULL,
+  last_name         VARCHAR(64) NOT NULL,
   password_alg      VARCHAR(8) NOT NULL,
   password_hash     VARCHAR(255) NOT NULL,
+  phone             VARCHAR(16),
   type              VARCHAR(8) NOT NULL,
   created_at        timestamp NOT NULL DEFAULT NOW(),
   updated_at        timestamp DEFAULT NOW()

@@ -23,7 +23,10 @@ impl DB {
             }
         });
 
-        let migration = fs::read_to_string("src/db/db.sql").expect("Not read file");
+        let path = std::env::var("DATABASE_SCHEMA_FILE_PATH")
+            .expect("set DATABASE_SCHEMA_FILE_PATH env variable");
+
+        let migration = fs::read_to_string(path).expect("Not read file");
         client.batch_execute(&migration).await.expect("Not init db");
 
         DB {

@@ -5,15 +5,25 @@ services:
     build: .
     restart: always
     ports:
-      - "80:3000"
+      - "3000:3000"
     depends_on:
       - db
+    environment:
+      CLIENT_URL: ${CLIENT_URL}
+      SECRET_KEY: ${SECRET_KEY}
+      DATABASE_URL: postgres://${DB_USERNAME}:${DB_PASSWORD}@db
+      DATABASE_SCHEMA_FILE_PATH:  ${DATABASE_SCHEMA_FILE_PATH}
+      MAILGUN_KEY: ${MAILGUN_KEY}
+      MAILGUN_DOMAIN: ${MAILGUN_DOMAIN}
   db:
     image: postgres
     restart: always
     volumes:
-       - ./data:/var/lib/postgresql/data
+       - db-data:/var/lib/postgresql/data
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+
+volumes:
+  db-data:
 

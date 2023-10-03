@@ -4,6 +4,9 @@ use async_trait::async_trait;
 pub trait TUserRepositories {
     async fn insert(
         &self,
+        first_name: &str,
+        last_name: &str,
+        phone: Option<&str>,
         email: &str,
         p_hash: &str,
         p_alg: &str,

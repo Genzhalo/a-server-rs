@@ -25,7 +25,6 @@ pub struct AppState {
 async fn main() {
     dotenv().ok();
 
-    println!("ENV: {:?}", std::env::var("DATABASE_URL"));
     let db = DB::connect().await;
 
     let cors = CorsLayer::new()

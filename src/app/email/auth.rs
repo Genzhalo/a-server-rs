@@ -1,20 +1,19 @@
-use super::{email::Email, entities::user::User, traits::send_email::TEmail};
-pub struct Notifier {
+use crate::app::{entities::user::User, traits::send_email::TEmail};
+
+use super::Email;
+
+pub struct AuthEvents {
     client_url: String,
     email: Box<dyn TEmail + Sync + Send>,
 }
 
-impl Notifier {
+impl AuthEvents {
     pub fn default() -> Self {
         let client_url = std::env::var("CLIENT_URL").expect("set CLIENT_URL env variable");
         Self {
             client_url,
             email: Box::new(Email::default()),
         }
-    }
-    pub fn new(email: Box<dyn TEmail + Sync + Send>) -> Self {
-        let client_url = std::env::var("CLIENT_URL").expect("set CLIENT_URL env variable");
-        Self { email, client_url }
     }
 
     pub async fn on_create_user(&self, email: &str, _admins: Vec<&str>) -> Result<(), String> {
@@ -32,15 +31,21 @@ impl Notifier {
         let url = format!("{}/auth/confirmation-email?token={code}", self.client_url);
         let html = format!(
             "<div>
-                <h1> Verify your email address </h1> 
                 <div>
-                      <a style='text-decoration: none' href={url}> Verify </button>
+                    <p> Hello, </p>
+                    <p> Thank you for signing up! Please click below to confirm your email. </p>
+                    <p> The team </p>
+                </div>
+                <div>
+                    <a style='text-decoration: none' href={url}> 
+                        Click here to confirm your email address 
+                    </a>
                 </div>
             </div>"
         );
         let _res = self
             .email
-            .send(vec![&email], String::from("Verify Email"), html)
+            .send(vec![&email], String::from("Email Confirmation"), html)
             .await;
 
         Ok(())

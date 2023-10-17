@@ -1,7 +1,8 @@
+use super::traits::send_email::TEmail;
 use async_trait::async_trait;
 use mailgun_rs::{EmailAddress, Mailgun, Message};
 
-use super::traits::send_email::TEmail;
+pub mod auth;
 
 pub struct Email {
     key: String,
@@ -10,8 +11,8 @@ pub struct Email {
 
 impl Email {
     pub fn default() -> Self {
-        let key = std::env::var("MAILGUN_KEY").expect("set SECRET_KEY env variable");
-        let domain = std::env::var("MAILGUN_DOMAIN").expect("set SECRET_KEY env variable");
+        let key = std::env::var("MAILGUN_KEY").expect("set JWT_SECRET_KEY env variable");
+        let domain = std::env::var("MAILGUN_DOMAIN").expect("set JWT_SECRET_KEY env variable");
         Email { key, domain }
     }
 }

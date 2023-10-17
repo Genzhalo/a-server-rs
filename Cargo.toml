@@ -3,11 +3,10 @@ name = "a-server"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 argon2 = "0.5.1"
-axum = "0.6.7"
+axum = { version = "0.6.7", features = ['ws'] }
 serde = { version = "1.0.152", features = ["derive"] }
 serde_json = "1.0.93"
 tokio = { version = "1.25.0", features = ["full"] }
@@ -23,6 +22,8 @@ jsonwebtoken = "8.2.0"
 chrono = { version = "0.4.23", features = ["serde"] }
 async-trait = "0.1.73"
 mailgun-rs = "0.1.10"
+futures = "0.3"
+
 
 [profile.release]
 opt-level = 3

@@ -17,7 +17,7 @@ jobs:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
           CLIENT_URL: http://localhost:5173
           DATABASE_SCHEMA_FILE_PATH: schema.sql
-          DATABASE_URL: postgres://${{ secrets.DATABASE_USERNAME }}:${{ secrets.DATABASE_PASSWORD }}@a-server-db.flycast:5432
+          DATABASE_URL: postgres://${{secrets.DATABASE_USERNAME}}:${{secrets.DATABASE_PASSWORD}}@a-server-db.flycast:5432
           MAILGUN_DOMAIN: sandbox4db26b72473b4bfeb146844a9866041c.mailgun.org
           MAILGUN_KEY: ${{ secrets.MAILGUN_KEY }}
           JWT_SECRET_KEY: ${{ secrets.MAILGUN_KEY }}

@@ -1,12 +1,17 @@
-use self::user::UserRepository;
-use crate::core::traits::repositories::user::TUserRepositories;
-use std::fs;
+use crate::app::traits::repositories::{
+    notification::TNotificationRepositories, user::TUserRepositories,
+};
+use std::{fs, sync::Arc};
 use tokio_postgres::NoTls;
 
+use self::{notification::NotificationRepository, user::UserRepository};
+
+mod notification;
 mod user;
 
 pub struct DB {
-    pub user: Box<dyn TUserRepositories + Sync + Send>,
+    pub users: Box<dyn TUserRepositories + Sync + Send>,
+    pub notifications: Box<dyn TNotificationRepositories + Sync + Send>,
 }
 
 impl DB {
@@ -29,8 +34,11 @@ impl DB {
         let migration = fs::read_to_string(path).expect("Not read file");
         client.batch_execute(&migration).await.expect("Not init db");
 
+        let arc_client = Arc::new(client);
+
         DB {
-            user: Box::new(UserRepository::new(client)),
+            users: Box::new(UserRepository::new(arc_client.clone())),
+            notifications: Box::new(NotificationRepository::new(arc_client.clone())),
         }
     }
 }

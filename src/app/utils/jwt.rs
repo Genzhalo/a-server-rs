@@ -1,4 +1,4 @@
-use crate::core::entities::user::User;
+use crate::app::entities::user::User;
 use chrono::Utc;
 use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
@@ -39,7 +39,7 @@ pub struct JWT {
 
 impl JWT {
     pub fn default() -> Self {
-        let secret = std::env::var("SECRET_KEY").expect("set SECRET_KEY env variable");
+        let secret = std::env::var("JWT_SECRET_KEY").expect("set JWT_SECRET_KEY env variable");
         Self { secret }
     }
 
@@ -71,17 +71,6 @@ impl JWT {
             user_type: Some(user.u_type.to_string()),
             claim_type: ClaimType::Login.to_string(),
             exp: self.get_expiration(7),
-            iat: SystemTime::now(),
-        };
-        self.create(&claims)
-    }
-
-    pub fn refresh(&self, user: &User) -> Result<String, String> {
-        let claims = Claims {
-            sub: user.id.to_owned(),
-            user_type: Some(user.u_type.to_string()),
-            claim_type: ClaimType::Refresh.to_string(),
-            exp: self.get_expiration(14),
             iat: SystemTime::now(),
         };
         self.create(&claims)

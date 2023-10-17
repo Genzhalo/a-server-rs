@@ -1,7 +1,7 @@
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 use std::fmt;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(untagged)]
 pub enum UserType {
     Client,
@@ -27,5 +27,14 @@ impl fmt::Display for UserType {
             UserType::Vendor => write!(f, "Vendor"),
             UserType::Admin => write!(f, "Admin"),
         }
+    }
+}
+
+impl Serialize for UserType {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
     }
 }

@@ -1,16 +1,16 @@
 use std::time::SystemTime;
 
-use crate::core::{
-    entities::user::user_type::UserType,
+use crate::app::{
+    email::auth::AuthEvents,
+    entities::user::{user_token::UserToken, user_type::UserType},
     errors::{BaseError, FieldError},
-    notifier::Notifier,
     traits::repositories::user::TUserRepositories,
     utils::{
         hash_pwd::{hash_pwd, verify_pwd},
         jwt::{ClaimType, JWT},
     },
 };
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use validator::{Validate, ValidationError};
 
 #[derive(Debug, Validate, Deserialize)]
@@ -59,25 +59,17 @@ pub struct PasswordInputData {
     password: String,
 }
 
-#[derive(Debug, Serialize)]
-pub struct LoginOutputData {
-    #[serde(rename = "accessToken")]
-    access_token: String,
-    #[serde(rename = "refreshToken")]
-    refresh_token: String,
-}
-
-pub struct UserService<'a> {
+pub struct AuthService<'a> {
     user_rep: &'a (dyn TUserRepositories + Send + Sync),
-    notifier: Notifier,
+    events: AuthEvents,
     duration_of_send_email: usize,
 }
 
-impl<'a> UserService<'a> {
+impl<'a> AuthService<'a> {
     pub fn default(user_rep: &'a (dyn TUserRepositories + Send + Sync)) -> Self {
         Self {
             user_rep,
-            notifier: Notifier::default(),
+            events: AuthEvents::default(),
             duration_of_send_email: 600,
         }
     }
@@ -87,7 +79,7 @@ impl<'a> UserService<'a> {
             Ok(_) => (),
             Err(e) => return Err(e),
         };
-        let user = self.user_rep.find_by_email(&signup_data.email).await;
+        let user = self.user_rep.find_by_email(&signup_data.email, false).await;
 
         if user.is_some() {
             return Err(BaseError::new("The email already using".to_string()));
@@ -129,22 +121,18 @@ impl<'a> UserService<'a> {
         let admins = self.user_rep.find_by_type(UserType::Admin).await;
         let emails: Vec<&str> = admins.iter().map(|u| u.email.as_str()).collect();
 
-        match self
-            .notifier
-            .on_create_user(&signup_data.email, emails)
-            .await
-        {
+        match self.events.on_create_user(&signup_data.email, emails).await {
             Ok(()) => Ok(user_id),
             Err(e) => Err(BaseError::new(e.to_string())),
         }
     }
 
-    pub async fn login(&self, data: LoginInputData) -> Result<LoginOutputData, BaseError> {
+    pub async fn login(&self, data: LoginInputData) -> Result<String, BaseError> {
         match self.validate_data(&data) {
             Ok(_) => (),
             Err(e) => return Err(e),
         };
-        let user_result = self.user_rep.find_by_email(&data.email).await;
+        let user_result = self.user_rep.find_by_email(&data.email, false).await;
 
         let (user, user_email) = match user_result {
             Some(user) => user,
@@ -164,20 +152,12 @@ impl<'a> UserService<'a> {
             Err(err) => return Err(BaseError::new(err)),
         };
 
-        let refresh_token = match JWT::default().refresh(&user) {
-            Ok(token) => token,
-            Err(err) => return Err(BaseError::new(err)),
-        };
-
         let res = self
             .user_rep
             .upsert_user_token(&user.id, &access_token, "WEB");
 
         match res.await {
-            Ok(_) => Ok(LoginOutputData {
-                access_token,
-                refresh_token,
-            }),
+            Ok(_) => Ok(access_token),
             Err(err) => Err(BaseError::new(err)),
         }
     }
@@ -187,7 +167,8 @@ impl<'a> UserService<'a> {
             Ok(_) => (),
             Err(e) => return Err(e),
         };
-        let user_result = self.user_rep.find_by_email(&data.email).await;
+
+        let user_result = self.user_rep.find_by_email(&data.email, true).await;
 
         let (user, user_email) = match user_result {
             Some(user) => user,
@@ -198,7 +179,9 @@ impl<'a> UserService<'a> {
             return Err(BaseError::new("Email is already verified".to_string()));
         }
 
-        match self.check_can_send_email(&user.id, "SEND_EMAIL").await {
+        let user_token = user.tokens.iter().find(|t| t.used_for == "SEND_EMAIL");
+
+        match self.check_can_send_email(user_token).await {
             Ok(_) => (),
             Err(err) => return Err(err),
         }
@@ -212,7 +195,7 @@ impl<'a> UserService<'a> {
             Err(e) => return Err(BaseError::new(e)),
         };
 
-        let user_result = self.user_rep.find_by_email(&email).await;
+        let user_result = self.user_rep.find_by_email(&email, true).await;
 
         let (user, user_email) = match user_result {
             Some(user) => user,
@@ -223,11 +206,11 @@ impl<'a> UserService<'a> {
             return Err(BaseError::new("Email is already verified".to_string()));
         }
 
-        let token_res: Option<String> = self.user_rep.find_token_by(&user.id, "SEND_EMAIL").await;
-
-        if token_res.is_none() || token_res.unwrap() != token {
-            return Err(BaseError::new("Token is expired".to_string()));
+        match user.tokens.iter().find(|t| t.token == token) {
+            Some(_) => (),
+            None => return Err(BaseError::new("Token is expired".to_string())),
         }
+
         match self
             .user_rep
             .remove_user_tokens(&user.id, vec![token])
@@ -242,7 +225,7 @@ impl<'a> UserService<'a> {
             Err(e) => return Err(BaseError::new(e.to_string())),
         };
 
-        match self.notifier.on_email_verified(&user).await {
+        match self.events.on_email_verified(&user).await {
             Ok(_) => Ok(()),
             Err(e) => Err(BaseError::new(e.to_string())),
         }
@@ -253,7 +236,7 @@ impl<'a> UserService<'a> {
             Ok(_) => (),
             Err(e) => return Err(e),
         };
-        let user_result = self.user_rep.find_by_email(&data.email).await;
+        let user_result = self.user_rep.find_by_email(&data.email, true).await;
 
         let (user, user_email) = match user_result {
             Some(user) => user,
@@ -264,7 +247,9 @@ impl<'a> UserService<'a> {
             return Err(BaseError::new("Email is not verified yet".to_string()));
         }
 
-        match self.check_can_send_email(&user.id, "FORGOT_PASSWORD").await {
+        let user_token = user.tokens.iter().find(|t| t.used_for == "FORGOT_PASSWORD");
+
+        match self.check_can_send_email(user_token).await {
             Ok(_) => (),
             Err(err) => return Err(err),
         }
@@ -283,7 +268,7 @@ impl<'a> UserService<'a> {
             return Err(BaseError::new(result.err().unwrap()));
         }
 
-        match self.notifier.on_forgot_password(&data.email, &code).await {
+        match self.events.on_forgot_password(&data.email, &code).await {
             Ok(()) => Ok(()),
             Err(e) => Err(BaseError::new(e.to_string())),
         }
@@ -304,18 +289,14 @@ impl<'a> UserService<'a> {
             Err(e) => return Err(BaseError::new(e)),
         };
 
-        match self.user_rep.find_by_id(&user_id).await {
-            Some(_) => (),
+        let user = match self.user_rep.find_by_id(&user_id, true).await {
+            Some(res) => res,
             None => return Err(BaseError::new("User not found".to_string())),
         };
 
-        let token_res: Option<String> = self
-            .user_rep
-            .find_token_by(&user_id, "FORGOT_PASSWORD")
-            .await;
-
-        if token_res.is_none() || token_res.unwrap() != token {
-            return Err(BaseError::new("Token is expired".to_string()));
+        match user.tokens.iter().find(|t| t.token == token) {
+            Some(_) => (),
+            None => return Err(BaseError::new("Token is expired".to_string())),
         }
 
         let (alg, hash) = match hash_pwd(&data.password) {
@@ -354,18 +335,12 @@ impl<'a> UserService<'a> {
         }
     }
 
-    async fn check_can_send_email(
-        &self,
-        user_id: &str,
-        token_used_for: &str,
-    ) -> Result<(), BaseError> {
-        let token_res = self.user_rep.find_token_by(&user_id, token_used_for).await;
-
-        if token_res.is_none() {
+    async fn check_can_send_email(&self, user_token: Option<&UserToken>) -> Result<(), BaseError> {
+        if user_token.is_none() {
             return Ok(());
         }
 
-        let claims = match JWT::default().parse(&token_res.unwrap(), None) {
+        let claims = match JWT::default().parse(&user_token.unwrap().token, None) {
             Ok(claims) => claims,
             Err(err) => return Err(BaseError::new(err)),
         };
@@ -403,7 +378,7 @@ impl<'a> UserService<'a> {
             return Err(BaseError::new(result.err().unwrap()));
         }
 
-        match self.notifier.on_send_email_verify(&email, &code).await {
+        match self.events.on_send_email_verify(&email, &code).await {
             Ok(()) => Ok(()),
             Err(e) => Err(BaseError::new(e.to_string())),
         }

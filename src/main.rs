@@ -1,40 +1,57 @@
-use axum::{routing::post, Router};
+use axum::{http::Method, Router};
+use app::entities::notification::Notification;
 use db::DB;
 use dotenv::dotenv;
-use handlers::auth;
+use handlers::{auth, conversation, notification, user, ws};
+use serde::Serialize;
 use std::{net::SocketAddr, sync::Arc};
+use tokio::sync::broadcast;
 use tower_http::cors::{Any, CorsLayer};
 
-mod core;
+mod app;
 mod db;
 mod handlers;
+
+#[derive(Debug, Clone, Serialize)]
+pub enum Event {
+    CreateNotification(Notification),
+}
+pub struct AppState {
+    db: DB,
+    tx: broadcast::Sender<Event>,
+}
 
 #[tokio::main]
 async fn main() {
     dotenv().ok();
 
-    let db_res = DB::connect().await;
-    let db = Arc::new(db_res);
+    let db = DB::connect().await;
+
     let cors = CorsLayer::new()
         .allow_origin(Any)
         .allow_headers(Any)
-        .allow_methods(Any);
+        .allow_methods([
+            Method::GET,
+            Method::DELETE,
+            Method::PATCH,
+            Method::POST,
+            Method::PUT,
+            Method::OPTIONS,
+        ]);
+
+    let (tx, _rx) = broadcast::channel(100);
+    let app_state = Arc::new(AppState { db, tx });
 
     let app = Router::new()
-        .route("/auth/signup", post(auth::sign_up))
-        .route("/auth/signin", post(auth::sign_in))
-        .route(
-            "/auth/send-email-verification",
-            post(auth::send_email_verification),
-        )
-        .route("/auth/email-verification", post(auth::email_verify))
-        .route("/auth/forgot-password", post(auth::forgot_password))
-        .route("/auth/reset-password", post(auth::reset_password))
-        .route("/auth/revoke-token", post(auth::revoke_token))
+        .merge(auth::build_routes())
+        .merge(conversation::build_routes())
+        .merge(user::build_routes())
+        .merge(ws::build_routes())
+        .merge(notification::build_routes())
         .layer(cors)
-        .with_state(db);
+        .with_state(app_state);
 
-    let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
+    let addr = SocketAddr::from(([0, 0, 0, 0], 8080));
 
     axum::Server::bind(&addr)
         .serve(app.into_make_service())

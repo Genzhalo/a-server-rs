@@ -1,4 +1,4 @@
-use crate::core::entities::user::{user_email::UserEmail, user_type::UserType, User};
+use crate::app::entities::user::{user_email::UserEmail, user_type::UserType, User};
 use async_trait::async_trait;
 #[async_trait]
 pub trait TUserRepositories {
@@ -15,8 +15,8 @@ pub trait TUserRepositories {
         is_primary: bool,
     ) -> Result<String, String>;
 
-    async fn find_by_email(&self, email: &str) -> Option<(User, UserEmail)>;
-    async fn find_by_id(&self, id: &str) -> Option<User>;
+    async fn find_by_email(&self, email: &str, with_tokens: bool) -> Option<(User, UserEmail)>;
+    async fn find_by_id(&self, id: &str, with_tokens: bool) -> Option<User>;
     async fn find_by_type(&self, u_type: UserType) -> Vec<User>;
 
     async fn update_password(&self, user_id: &str, alg: &str, hash: &str) -> Result<bool, String>;
@@ -27,8 +27,6 @@ pub trait TUserRepositories {
         token: &str,
         used_for: &str,
     ) -> Result<bool, String>;
-
-    async fn find_token_by(&self, user_id: &str, used_for: &str) -> Option<String>;
 
     async fn remove_user_tokens(&self, user_id: &str, tokens: Vec<&str>) -> Result<(), String>;
 

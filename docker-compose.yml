@@ -10,7 +10,7 @@ services:
       - db
     environment:
       CLIENT_URL: ${CLIENT_URL}
-      SECRET_KEY: ${SECRET_KEY}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
       DATABASE_URL: postgres://${DB_USERNAME}:${DB_PASSWORD}@db
       DATABASE_SCHEMA_FILE_PATH:  ${DATABASE_SCHEMA_FILE_PATH}
       MAILGUN_KEY: ${MAILGUN_KEY}

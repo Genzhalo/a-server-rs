@@ -8,13 +8,6 @@ primary_region = "waw"
 
 [build]
 
-# [env]
-#   CLIENT_URL = "http://localhost:5173"
-#   DATABASE_SCHEMA_FILE_PATH = "schema.sql"
-#   DATABASE_URL = "postgres://postgres:ej2QMoPNcovkv8C@a-server-db.flycast:5432"
-#   MAILGUN_DOMAIN = "sandbox4db26b72473b4bfeb146844a9866041c.mailgun.org"
-#   MAILGUN_KEY = "key-cc0df35ffe526af695b1f91ff1f362ea"
-#   JWT_SECRET_KEY = "secret"
 
 [http_service]
   internal_port = 8080

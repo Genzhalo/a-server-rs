@@ -17,7 +17,7 @@ pub trait TUserRepositories {
 
     async fn find_by_email(&self, email: &str, with_tokens: bool) -> Option<(User, UserEmail)>;
     async fn find_by_id(&self, id: &str, with_tokens: bool) -> Option<User>;
-    async fn find_by_type(&self, u_type: UserType) -> Vec<User>;
+    async fn find(&self, types: Vec<UserType>, search: Option<&str>, limit: Option<i64>, skip: Option<i64>) -> Vec<User>;
 
     async fn update_password(&self, user_id: &str, alg: &str, hash: &str) -> Result<bool, String>;
 

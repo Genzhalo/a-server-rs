@@ -29,9 +29,9 @@ async fn live(
     State(state): State<Arc<AppState>>,
     auth: AuthData,
 ) -> impl IntoResponse {
-    let service = UserService::new(state.db.users.as_ref());
+    let service = UserService::new(state.db.users.as_ref(), &auth.token);
 
-    let user = match service.get_current_user(&auth.token).await {
+    let user = match service.get_current_user().await {
         Ok(user) => user,
         Err(err) => return (StatusCode::FORBIDDEN, Json(json!({ "data":  err }))).into_response(),
     };

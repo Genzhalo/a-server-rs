@@ -3,12 +3,11 @@ use std::time::SystemTime;
 use crate::app::{
     email::auth::AuthEvents,
     entities::user::{user_token::UserToken, user_type::UserType},
-    errors::{BaseError, FieldError},
     traits::repositories::user::TUserRepositories,
     utils::{
         hash_pwd::{hash_pwd, verify_pwd},
-        jwt::{ClaimType, JWT},
-    },
+        jwt::{ClaimType, JWT}, validate_params::validate,
+    }, errors::BaseError,
 };
 use serde::Deserialize;
 use validator::{Validate, ValidationError};
@@ -75,7 +74,7 @@ impl<'a> AuthService<'a> {
     }
 
     pub async fn create(&self, signup_data: CreateInputData) -> Result<String, BaseError> {
-        match self.validate_data(&signup_data) {
+        match validate(&signup_data) {
             Ok(_) => (),
             Err(e) => return Err(e),
         };
@@ -118,7 +117,7 @@ impl<'a> AuthService<'a> {
             Err(e) => return Err(e),
         }
 
-        let admins = self.user_rep.find_by_type(UserType::Admin).await;
+        let admins = self.user_rep.find(vec![UserType::Admin], None, None, None).await;
         let emails: Vec<&str> = admins.iter().map(|u| u.email.as_str()).collect();
 
         match self.events.on_create_user(&signup_data.email, emails).await {
@@ -128,7 +127,7 @@ impl<'a> AuthService<'a> {
     }
 
     pub async fn login(&self, data: LoginInputData) -> Result<String, BaseError> {
-        match self.validate_data(&data) {
+        match validate(&data) {
             Ok(_) => (),
             Err(e) => return Err(e),
         };
@@ -163,7 +162,7 @@ impl<'a> AuthService<'a> {
     }
 
     pub async fn send_email_verification(&self, data: EmailInputData) -> Result<(), BaseError> {
-        match self.validate_data(&data) {
+        match validate(&data) {
             Ok(_) => (),
             Err(e) => return Err(e),
         };
@@ -232,7 +231,7 @@ impl<'a> AuthService<'a> {
     }
 
     pub async fn forgot_password(&self, data: EmailInputData) -> Result<(), BaseError> {
-        match self.validate_data(&data) {
+        match validate(&data) {
             Ok(_) => (),
             Err(e) => return Err(e),
         };
@@ -279,7 +278,7 @@ impl<'a> AuthService<'a> {
         token: &str,
         data: PasswordInputData,
     ) -> Result<(), BaseError> {
-        match self.validate_data(&data) {
+        match validate(&data) {
             Ok(_) => (),
             Err(e) => return Err(e),
         };
@@ -342,7 +341,7 @@ impl<'a> AuthService<'a> {
 
         let claims = match JWT::default().parse(&user_token.unwrap().token, None) {
             Ok(claims) => claims,
-            Err(err) => return Err(BaseError::new(err)),
+            Err(_) => return Ok(()),
         };
 
         let sec_duration = match SystemTime::now().duration_since(claims.iat) {
@@ -384,22 +383,4 @@ impl<'a> AuthService<'a> {
         }
     }
 
-    fn validate_data<T: Validate>(&self, data: &T) -> Result<(), BaseError> {
-        match data.validate() {
-            Ok(_) => Ok(()),
-            Err(e) => {
-                let mut errors: Vec<FieldError> = vec![];
-                e.field_errors().iter().for_each(|f| {
-                    errors.push(FieldError {
-                        field: f.0.to_string(),
-                        message: f.1.first().unwrap().clone().message.unwrap().to_string(),
-                    })
-                });
-                return Err(BaseError {
-                    message: "".to_string(),
-                    fields: Some(errors),
-                });
-            }
-        }
-    }
 }

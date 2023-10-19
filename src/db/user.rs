@@ -129,14 +129,13 @@ impl TUserRepositories for UserRepository {
 
     async fn find_by_id(&self, id: &str, with_tokens: bool) -> Option<User> {
         let statement = if with_tokens {
-            "SELECT e.*, u.*, t.token, t.type as used_for FROM users AS u
+            "SELECT  e.email as email, u.*, t.token, t.type as used_for FROM users AS u
                 JOIN user_emails AS e ON u.id = $1 AND e.user_id = $1 AND e.is_primary = true
                 LEFT JOIN user_tokens AS t ON u.id = t.user_id;"
         } else {
-            "SELECT e.*, u.* FROM users AS u
-                INNER JOIN user_emails AS e ON u.id = $1 AND e.user_id = $1 AND e.is_primary = true;"
+            "SELECT e.email as email, u.* FROM users AS u
+                JOIN user_emails AS e ON u.id = $1 AND e.user_id = $1 AND e.is_primary = true;"
         };
-
         let res = self.client.query(statement, &[&id]).await;
         match res {
             Ok(rows) => {
@@ -150,16 +149,21 @@ impl TUserRepositories for UserRepository {
         }
     }
 
-    async fn find_by_type(&self, u_type: UserType) -> Vec<User> {
+    async fn find(&self, types: Vec<UserType>, value: Option<&str>, limit: Option<i64>, skip: Option<i64>) -> Vec<User> {
+        let user_types: Vec<String> = types.iter().map( | t | t.to_string()).collect();
+        let value = format!("%{}%", value.unwrap_or(""));
         let statement =
-            format!("SELECT * FROM users JOIN user_emails ON id = user_id AND type = $1");
-        let res = self.client.query(&statement, &[&u_type.to_string()]).await;
+            format!("SELECT u.*, e.email as email FROM users AS u 
+                JOIN user_emails AS e ON u.id = e.user_id AND u.type = ANY($1) AND (u.first_name LIKE $2 OR u.last_name LIKE $2)
+                LIMIT $3 OFFSET $4;");
+
+        let res = self.client.query(&statement, &[&user_types, &value, &limit, &skip]).await;
         match res {
             Ok(rows) => rows
                 .into_iter()
                 .map(|row| User::from_rows(&vec![row]))
                 .collect(),
-            Err(_) => vec![],
+            Err(_) =>  vec![]
         }
     }
 

@@ -23,8 +23,8 @@ pub fn build_routes() -> Router<Arc<AppState>, Body> {
 
 async fn get_notifications(State(state): State<Arc<AppState>>, auth: AuthData) -> Response {
     let service =
-        NotificationService::new(state.db.users.as_ref(), state.db.notifications.as_ref());
-    match service.get_all_for_current_user(&auth.token).await {
+        NotificationService::new(state.db.users.as_ref(), state.db.notifications.as_ref(), &auth.token);
+    match service.get_all_for_current_user().await {
         Ok(data) => (StatusCode::OK, Json(json!({ "data":  data }))).into_response(),
         Err(err) => (StatusCode::BAD_REQUEST, Json(json!({ "data":  err }))).into_response(),
     }
@@ -32,8 +32,8 @@ async fn get_notifications(State(state): State<Arc<AppState>>, auth: AuthData) -
 
 async fn del_for_current_user(State(state): State<Arc<AppState>>, auth: AuthData) -> Response {
     let service =
-        NotificationService::new(state.db.users.as_ref(), state.db.notifications.as_ref());
-    match service.delete_all_for_current_user(&auth.token).await {
+        NotificationService::new(state.db.users.as_ref(), state.db.notifications.as_ref(),&auth.token);
+    match service.delete_all_for_current_user().await {
         Ok(data) => (StatusCode::OK, Json(json!({ "data":  data }))).into_response(),
         Err(err) => (StatusCode::BAD_REQUEST, Json(json!({ "data":  err }))).into_response(),
     }
@@ -41,9 +41,9 @@ async fn del_for_current_user(State(state): State<Arc<AppState>>, auth: AuthData
 
 async fn read_for_current_user(State(state): State<Arc<AppState>>, auth: AuthData) -> Response {
     let service =
-        NotificationService::new(state.db.users.as_ref(), state.db.notifications.as_ref());
+        NotificationService::new(state.db.users.as_ref(), state.db.notifications.as_ref(), &auth.token);
 
-    match service.read_all_for_current_user(&auth.token).await {
+    match service.read_all_for_current_user().await {
         Ok(data) => (StatusCode::OK, Json(json!({ "data":  data }))).into_response(),
         Err(err) => (StatusCode::BAD_REQUEST, Json(json!({ "data":  err }))).into_response(),
     }
@@ -55,9 +55,9 @@ async fn get_notification(
     auth: AuthData,
 ) -> Response {
     let service =
-        NotificationService::new(state.db.users.as_ref(), state.db.notifications.as_ref());
+        NotificationService::new(state.db.users.as_ref(), state.db.notifications.as_ref(), &auth.token);
 
-    match service.get_by_id(id, &auth.token).await {
+    match service.get_by_id(id).await {
         Ok(data) => (StatusCode::OK, Json(json!({ "data":  data }))).into_response(),
         Err(err) => (StatusCode::BAD_REQUEST, Json(json!({ "data":  err }))).into_response(),
     }
@@ -69,9 +69,9 @@ async fn read_notification(
     auth: AuthData,
 ) -> Response {
     let service =
-        NotificationService::new(state.db.users.as_ref(), state.db.notifications.as_ref());
+        NotificationService::new(state.db.users.as_ref(), state.db.notifications.as_ref(), &auth.token);
 
-    match service.read_by_id(id, &auth.token).await {
+    match service.read_by_id(id).await {
         Ok(data) => (StatusCode::OK, Json(json!({ "data":  data }))).into_response(),
         Err(err) => (StatusCode::BAD_REQUEST, Json(json!({ "data":  err }))).into_response(),
     }
@@ -83,9 +83,9 @@ async fn del_notification(
     auth: AuthData,
 ) -> Response {
     let service =
-        NotificationService::new(state.db.users.as_ref(), state.db.notifications.as_ref());
+        NotificationService::new(state.db.users.as_ref(), state.db.notifications.as_ref(), &auth.token);
 
-    match service.delete_by_id(id, &auth.token).await {
+    match service.delete_by_id(id).await {
         Ok(data) => (StatusCode::OK, Json(json!({ "data":  data }))).into_response(),
         Err(err) => (StatusCode::BAD_REQUEST, Json(json!({ "data":  err }))).into_response(),
     }

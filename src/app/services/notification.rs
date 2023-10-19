@@ -15,15 +15,16 @@ impl<'a> NotificationService<'a> {
     pub fn new(
         user_rep: &'a (dyn TUserRepositories + Send + Sync),
         notification_rep: &'a (dyn TNotificationRepositories + Send + Sync),
+        token: &'a str
     ) -> Self {
         Self {
             notification_rep,
-            user_service: UserService::new(user_rep),
+            user_service: UserService::new(user_rep, token),
         }
     }
 
-    pub async fn get_by_id(&self, id: i32, token: &str) -> Result<Notification, BaseError> {
-        match self.user_service.get_current_user(token).await {
+    pub async fn get_by_id(&self, id: i32) -> Result<Notification, BaseError> {
+        match self.user_service.get_current_user().await {
             Ok(user) => user,
             Err(err) => return Err(err),
         };
@@ -34,8 +35,8 @@ impl<'a> NotificationService<'a> {
         }
     }
 
-    pub async fn read_by_id(&self, id: i32, token: &str) -> Result<(), BaseError> {
-        let user = match self.user_service.get_current_user(token).await {
+    pub async fn read_by_id(&self, id: i32) -> Result<(), BaseError> {
+        let user = match self.user_service.get_current_user().await {
             Ok(user) => user,
             Err(err) => return Err(err),
         };
@@ -55,8 +56,8 @@ impl<'a> NotificationService<'a> {
         }
     }
 
-    pub async fn delete_by_id(&self, id: i32, token: &str) -> Result<(), BaseError> {
-        let user = match self.user_service.get_current_user(token).await {
+    pub async fn delete_by_id(&self, id: i32) -> Result<(), BaseError> {
+        let user = match self.user_service.get_current_user().await {
             Ok(user) => user,
             Err(err) => return Err(err),
         };
@@ -78,21 +79,19 @@ impl<'a> NotificationService<'a> {
 
     pub async fn get_all_for_current_user(
         &self,
-        token: &str,
     ) -> Result<Vec<Notification>, BaseError> {
-        let user = match self.user_service.get_current_user(token).await {
+        let user = match self.user_service.get_current_user().await {
             Ok(user) => user,
             Err(err) => return Err(err),
         };
-
         Ok(self
             .notification_rep
             .find_by_receiver(&user.id, false, None)
             .await)
     }
 
-    pub async fn delete_all_for_current_user(&self, token: &str) -> Result<(), BaseError> {
-        let user = match self.user_service.get_current_user(token).await {
+    pub async fn delete_all_for_current_user(&self) -> Result<(), BaseError> {
+        let user = match self.user_service.get_current_user().await {
             Ok(user) => user,
             Err(err) => return Err(err),
         };
@@ -103,8 +102,8 @@ impl<'a> NotificationService<'a> {
         }
     }
 
-    pub async fn read_all_for_current_user(&self, token: &str) -> Result<(), BaseError> {
-        let user = match self.user_service.get_current_user(token).await {
+    pub async fn read_all_for_current_user(&self) -> Result<(), BaseError> {
+        let user = match self.user_service.get_current_user().await {
             Ok(user) => user,
             Err(err) => return Err(err),
         };

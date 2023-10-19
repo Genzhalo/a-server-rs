@@ -4,7 +4,7 @@ use validator::{Validate, ValidationError};
 use crate::app::{
     entities::user::{User, user_type::UserType},
     errors::BaseError,
-    traits::repositories::user::TUserRepositories, utils::{hash_pwd::hash_pwd, jwt::{ClaimType, JWT}, validate_params::validate},
+    traits::repositories::user::TUserRepositories, utils::{jwt::{ClaimType, JWT}, validate_params::validate},
 };
 
 #[derive(Debug, Validate, Deserialize)]

@@ -1,5 +1,7 @@
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 CREATE TABLE IF NOT EXISTS users (
-  id                VARCHAR(36) NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
+  id                VARCHAR(36) NOT NULL PRIMARY KEY DEFAULT uuid_generate_v4(),
   first_name        VARCHAR(64) NOT NULL,
   last_name         VARCHAR(64) NOT NULL,
   password_alg      VARCHAR(8) NOT NULL,
@@ -77,7 +79,7 @@ CREATE INDEX IF NOT EXISTS idx_n_user_is_delete ON notification_user (is_delete)
 CREATE INDEX IF NOT EXISTS idx_n_user_user_id ON notification_user (user_id);
 
 CREATE TABLE IF NOT EXISTS project (
-  id                      VARCHAR(36) NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
+  id                      VARCHAR(36) NOT NULL PRIMARY KEY DEFAULT uuid_generate_v4(),
   name                    VARCHAR(64) NOT NULL,
   city                    VARCHAR(64) NOT NULL,
   status                  VARCHAR(8) NOT NULL,

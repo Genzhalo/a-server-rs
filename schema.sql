@@ -75,3 +75,34 @@ CREATE TABLE IF NOT EXISTS notification_user(
 CREATE INDEX IF NOT EXISTS idx_n_user_n_id ON notification_user (notification_id);
 CREATE INDEX IF NOT EXISTS idx_n_user_is_delete ON notification_user (is_delete);
 CREATE INDEX IF NOT EXISTS idx_n_user_user_id ON notification_user (user_id);
+
+CREATE TABLE IF NOT EXISTS project (
+  id                      VARCHAR(36) NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
+  name                    VARCHAR(64) NOT NULL,
+  city                    VARCHAR(64) NOT NULL,
+  status                  VARCHAR(8) NOT NULL,
+  street                  VARCHAR(255),
+  zip_code                VARCHAR(16),
+  floor                   VARCHAR(36),
+  description             VARCHAR,
+  building_type           VARCHAR(64) NOT NULL,
+  user_id                 VARCHAR(36) NOT NULL,
+  is_save_carbon          BOOLEAN NOT NULL,
+  appropriate_status      VARCHAR(64) NOT NULL,
+  budget_range            VARCHAR(32) NOT NULL,
+  square_range            VARCHAR(32) NOT NULL,
+  commercial_work         VARCHAR(64) NOT NULL,
+  has_financing_secured   BOOLEAN NOT NULL, 
+  completion_date         timestamp NOT NULL,
+  architectural_services  text[],
+  created_at              timestamp NOT NULL DEFAULT NOW(),
+  updated_at              timestamp DEFAULT NOW(),
+
+  CONSTRAINT fk_project_creator
+    FOREIGN KEY(user_id) 
+      REFERENCES users(id)
+        ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_project_name ON project (name);
+CREATE INDEX IF NOT EXISTS idx_project_status ON project (status);

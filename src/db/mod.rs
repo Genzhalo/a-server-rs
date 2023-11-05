@@ -1,17 +1,20 @@
 use crate::app::traits::repositories::{
-    notification::TNotificationRepositories, user::TUserRepositories,
+    notification::TNotificationRepositories, user::TUserRepositories, project::TProjectRepositories,
 };
 use std::{fs, sync::Arc};
 use tokio_postgres::NoTls;
 
-use self::{notification::NotificationRepository, user::UserRepository};
+use self::{notification::NotificationRepository, user::UserRepository, project::ProjectRepository};
 
 mod notification;
 mod user;
+mod project;
+pub mod from_row;
 
 pub struct DB {
     pub users: Box<dyn TUserRepositories + Sync + Send>,
     pub notifications: Box<dyn TNotificationRepositories + Sync + Send>,
+    pub projects: Box<dyn TProjectRepositories + Sync + Send>,
 }
 
 impl DB {
@@ -39,6 +42,7 @@ impl DB {
         DB {
             users: Box::new(UserRepository::new(arc_client.clone())),
             notifications: Box::new(NotificationRepository::new(arc_client.clone())),
+            projects: Box::new(ProjectRepository::new(arc_client.clone()))
         }
     }
 }

@@ -3,6 +3,7 @@ use async_trait::async_trait;
 use mailgun_rs::{EmailAddress, Mailgun, Message};
 
 pub mod auth;
+pub mod project;
 
 pub struct Email {
     key: String,

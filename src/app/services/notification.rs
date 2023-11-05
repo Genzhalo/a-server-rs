@@ -24,12 +24,12 @@ impl<'a> NotificationService<'a> {
     }
 
     pub async fn get_by_id(&self, id: i32) -> Result<Notification, BaseError> {
-        match self.user_service.get_current_user().await {
+        let user = match self.user_service.get_current_user().await {
             Ok(user) => user,
             Err(err) => return Err(err),
         };
 
-        match self.notification_rep.find_by_id(id).await {
+        match self.notification_rep.find_by_id(id, &user.id).await {
             Some(notification) => Ok(notification),
             None => Err(BaseError::new("Notification not found ".to_string())),
         }
@@ -41,16 +41,12 @@ impl<'a> NotificationService<'a> {
             Err(err) => return Err(err),
         };
 
-        let notification = match self.notification_rep.find_by_id(id).await {
+        match self.notification_rep.find_by_id(id, &user.id).await {
             Some(data) => data,
             None => return Err(BaseError::new("Notification not found ".to_string())),
         };
 
-        if notification.receiver.id != user.id {
-            return Err(BaseError::new("Forbidden".to_string()));
-        }
-
-        match self.notification_rep.set_read_by_id(id).await {
+        match self.notification_rep.set_read_by_id(id, &user.id).await {
             Ok(_) => Ok(()),
             Err(err) => Err(BaseError::new(err)),
         }
@@ -62,16 +58,12 @@ impl<'a> NotificationService<'a> {
             Err(err) => return Err(err),
         };
 
-        let notification = match self.notification_rep.find_by_id(id).await {
+        match self.notification_rep.find_by_id(id, &user.id).await {
             Some(data) => data,
             None => return Err(BaseError::new("Notification not found ".to_string())),
         };
 
-        if notification.receiver.id != user.id {
-            return Err(BaseError::new("Forbidden".to_string()));
-        }
-
-        match self.notification_rep.set_delete_by_id(id).await {
+        match self.notification_rep.set_delete_by_id(id, &user.id).await {
             Ok(_) => Ok(()),
             Err(err) => Err(BaseError::new(err)),
         }

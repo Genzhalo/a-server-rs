@@ -2,7 +2,7 @@ use axum::{http::Method, Router};
 use app::entities::notification::Notification;
 use db::DB;
 use dotenv::dotenv;
-use handlers::{auth, conversation, notification, user, ws};
+use handlers::{auth, conversation, notification, user, ws, project};
 use serde::Serialize;
 use std::{net::SocketAddr, sync::Arc};
 use tokio::sync::broadcast;
@@ -48,6 +48,7 @@ async fn main() {
         .merge(user::build_routes())
         .merge(ws::build_routes())
         .merge(notification::build_routes())
+        .merge(project::build_routes())
         .layer(cors)
         .with_state(app_state);
 

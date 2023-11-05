@@ -18,9 +18,9 @@ pub trait TNotificationRepositories {
         is_delete: bool,
         is_read: Option<bool>,
     ) -> Vec<Notification>;
-    async fn find_by_id(&self, id: i32) -> Option<Notification>;
-    async fn set_read_by_id(&self, id: i32) -> Result<bool, String>;
+    async fn find_by_id(&self, id: i32, receiver_id: &str) -> Option<Notification>;
+    async fn set_read_by_id(&self, id: i32,  receiver_id: &str) -> Result<bool, String>;
     async fn set_read_by_receiver(&self, receiver_id: &str) -> Result<bool, String>;
-    async fn set_delete_by_id(&self, id: i32) -> Result<bool, String>;
+    async fn set_delete_by_id(&self, id: i32, receiver_id: &str) -> Result<bool, String>;
     async fn set_delete_by_receiver(&self, receiver_id: &str) -> Result<bool, String>;
 }

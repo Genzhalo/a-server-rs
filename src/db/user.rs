@@ -151,10 +151,10 @@ impl TUserRepositories for UserRepository {
 
     async fn find(&self, types: Vec<UserType>, value: Option<&str>, limit: Option<i64>, skip: Option<i64>) -> Vec<User> {
         let user_types: Vec<String> = types.iter().map( | t | t.to_string()).collect();
-        let value = format!("%{}%", value.unwrap_or("")).to_lowercase();
+        let value = format!("%{}%", value.unwrap_or("").split_whitespace().collect::<String>()).to_lowercase();
         let statement =
             format!("SELECT u.*, e.email as email FROM users AS u 
-                JOIN user_emails AS e ON u.id = e.user_id AND u.type = ANY($1) AND lower(CONCAT(u.first_name, ' ', u.last_name)) LIKE ($2)
+                JOIN user_emails AS e ON u.id = e.user_id AND u.type = ANY($1) AND lower(CONCAT(u.first_name, u.last_name)) LIKE ($2)
                 LIMIT $3 OFFSET $4;");
 
         let res = self.client.query(&statement, &[&user_types, &value, &limit, &skip]).await;
@@ -163,7 +163,7 @@ impl TUserRepositories for UserRepository {
                 .into_iter()
                 .map(|row| User::from_rows(&vec![row]))
                 .collect(),
-            Err(e) =>  vec![]
+            Err(_) =>  vec![]
         }
     }
 
